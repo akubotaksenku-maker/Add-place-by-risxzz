@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZynPlace — Roblox Publisher</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0c10; --surface: #111318; --surface2: #181c24;
+      --border: #1f2530; --border2: #2a3040;
+      --accent: #4f8fff; --accent2: #3a6fd4;
+      --green: #2dca72; --red: #ff4e4e; --yellow: #f5c518;
+      --purple: #a855f7; --purple2: #7c3aed;
+      --text: #e8eaf0; --muted: #6b7280; --subtle: #9ca3af;
+      --mono: 'JetBrains Mono', monospace;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+    /* Header */
+    header {
+      border-bottom: 1px solid var(--border); padding: 0 24px;
+      display: flex; align-items: center; gap: 12px; height: 56px;
+      position: sticky; top: 0; background: rgba(10,12,16,0.92);
+      backdrop-filter: blur(12px); z-index: 10;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; letter-spacing: -0.3px; }
+    .logo-icon {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, #4f8fff, #7c3aed);
+      border-radius: 7px; display: grid; place-items: center; font-size: 13px;
+    }
+    .badge {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.5px;
+      background: rgba(79,143,255,0.12); color: var(--accent);
+      border: 1px solid rgba(79,143,255,0.25); padding: 2px 7px;
+      border-radius: 20px; text-transform: uppercase;
+    }
+    header .spacer { flex: 1; }
+    .cookie-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+    .dot.valid { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .dot.invalid { background: var(--red); }
+    .dot.running { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    /* Layout */
+    .container { max-width: 960px; margin: 0 auto; padding: 24px 20px; display: flex; flex-direction: column; gap: 16px; }
+
+    /* Cookie Card */
+    .cookie-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px 20px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .cookie-card-header { display: flex; align-items: center; justify-content: space-between; }
+    .section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); }
+    .save-cookie-btn {
+      font-size: 12px; font-weight: 500; color: var(--accent);
+      background: rgba(79,143,255,0.1); border: 1px solid rgba(79,143,255,0.2);
+      border-radius: 6px; padding: 4px 12px; cursor: pointer; transition: all .15s;
+    }
+    .save-cookie-btn:hover { background: rgba(79,143,255,0.2); }
+    .cookie-row { display: flex; gap: 8px; }
+    .cookie-input-wrap { flex: 1; position: relative; }
+    .cookie-input-wrap input {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+      border-radius: 8px; padding: 9px 36px 9px 12px; color: var(--text);
+      font-family: var(--mono); font-size: 12px; outline: none; transition: border .15s;
+    }
+    .cookie-input-wrap input:focus { border-color: var(--accent); }
+    .toggle-vis {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      cursor: pointer; color: var(--muted); font-size: 13px; user-select: none;
+    }
+    .cookie-hint { font-size: 11px; color: var(--muted); }
+    .cookie-hint span { color: var(--yellow); }
+
+    /* Tabs */
+    .tabs {
+      display: flex; gap: 2px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 10px; padding: 4px;
+    }
+    .tab-btn {
+      flex: 1; padding: 9px 16px; border-radius: 7px; border: none;
+      background: transparent; color: var(--muted); font-family: 'Inter', sans-serif;
+      font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { background: var(--surface2); color: var(--text); box-shadow: inset 0 0 0 1px var(--border2); }
+
+    /* Panels */
+    .panel { display: none; }
+    .panel.active { display: flex; flex-direction: column; gap: 14px; }
+
+    /* Card */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .card-head {
+      padding: 12px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .card-head-icon { width: 28px; height: 28px; border-radius: 7px; display: grid; place-items: center; font-size: 14px; }
+    .card-title { font-size: 13px; font-weight: 600; }
+    .card-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+
+    /* Form */
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label { font-size: 12px; font-weight: 500; color: var(--subtle); }
+    .field input {
+      background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px;
+      padding: 9px 12px; color: var(--text); font-family: 'Inter', sans-serif;
+      font-size: 13px; outline: none; transition: border .15s;
+    }
+    .field input:focus { border-color: var(--accent); }
+    .field .hint { font-size: 11px; color: var(--muted); }
+    .fields-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* Progress */
+    .progress-area {
+      background: var(--surface2); border: 1px solid var(--border2);
+      border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 7px;
+    }
+    .progress-top { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+    .progress-status { display: flex; align-items: center; gap: 6px; }
+    .progress-bar-wrap { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .progress-bar { height: 100%; width: 0%; border-radius: 2px; transition: width .3s; }
+    .progress-bar.univ { background: linear-gradient(90deg, var(--accent), var(--purple2)); }
+    .progress-bar.voice { background: linear-gradient(90deg, var(--purple), #ec4899); }
+
+    /* Buttons */
+    .actions { display: flex; gap: 8px; }
+    .btn {
+      padding: 8px 18px; border-radius: 8px; border: none;
+      font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500;
+      cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent2); }
+    .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-purple { background: var(--purple2); color: #fff; }
+    .btn-purple:hover { background: #6d28d9; }
+    .btn-purple:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-danger { background: rgba(255,78,78,0.12); color: var(--red); border: 1px solid rgba(255,78,78,0.2); }
+    .btn-danger:hover { background: rgba(255,78,78,0.2); }
+    .btn-danger:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border2); }
+    .btn-ghost:hover { color: var(--text); background: var(--surface2); }
+
+    /* ── Log inside tab ── */
+    .log-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .log-header {
+      padding: 10px 16px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .log-header-left { display: flex; align-items: center; gap: 8px; }
+    .log-count {
+      background: var(--surface2); border: 1px solid var(--border2);
+      border-radius: 20px; padding: 1px 8px; font-size: 11px;
+      font-family: var(--mono); color: var(--muted);
+    }
+    .log-actions { display: flex; gap: 5px; flex-wrap: wrap; }
+    .log-filter-btn {
+      font-size: 11px; padding: 3px 8px; border-radius: 5px;
+      border: 1px solid var(--border2); background: transparent;
+      color: var(--muted); cursor: pointer; transition: all .1s; font-family: 'Inter', sans-serif;
+    }
+    .log-filter-btn.active { background: var(--surface2); color: var(--text); }
+    .log-clear {
+      font-size: 11px; padding: 3px 9px; border-radius: 5px;
+      border: 1px solid rgba(255,78,78,0.2); background: rgba(255,78,78,0.06);
+      color: var(--red); cursor: pointer; font-family: 'Inter', sans-serif; transition: all .1s;
+    }
+    .log-clear:hover { background: rgba(255,78,78,0.15); }
+
+    .log-body {
+      height: 240px; overflow-y: auto; padding: 6px 0;
+      font-family: var(--mono); font-size: 11.5px;
+    }
+    .log-body::-webkit-scrollbar { width: 4px; }
+    .log-body::-webkit-scrollbar-track { background: transparent; }
+    .log-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    .log-entry {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 4px 14px; transition: background .1s;
+    }
+    .log-entry:hover { background: rgba(255,255,255,0.02); }
+    .log-entry.hidden { display: none; }
+    .log-time { color: var(--muted); flex-shrink: 0; font-size: 10.5px; margin-top: 1px; }
+    .log-tag {
+      flex-shrink: 0; font-size: 10px; font-weight: 600; padding: 1px 6px;
+      border-radius: 4px; text-transform: uppercase; letter-spacing: 0.4px; margin-top: 1px;
+    }
+    .log-tag.info { background: rgba(79,143,255,0.12); color: var(--accent); }
+    .log-tag.ok   { background: rgba(45,202,114,0.12);  color: var(--green); }
+    .log-tag.err  { background: rgba(255,78,78,0.12);   color: var(--red); }
+    .log-tag.warn { background: rgba(245,197,24,0.12);  color: var(--yellow); }
+    .log-msg { flex: 1; color: var(--text); line-height: 1.5; }
+    .id-chip {
+      display: inline-block; background: rgba(79,143,255,0.1); color: var(--accent);
+      border-radius: 4px; padding: 0 5px; margin-left: 4px; font-size: 10.5px;
+    }
+    .log-empty {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 160px; gap: 8px; color: var(--muted); font-size: 12px; font-family: 'Inter', sans-serif;
+    }
+    .log-empty .icon { font-size: 24px; opacity: .4; }
+
+    /* Stats row */
+    .stats-row {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+      padding: 12px 16px; border-top: 1px solid var(--border);
+    }
+    .stat-box { background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 12px; }
+    .stat-label { font-size: 11px; color: var(--muted); }
+    .stat-val { font-size: 20px; font-weight: 700; font-family: var(--mono); }
+    .stat-val.neutral { color: var(--text); }
+    .stat-val.green { color: var(--green); }
+    .stat-val.red { color: var(--red); }
+
+    @media (max-width: 580px) {
+      .fields-row { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    ZynPlace
+  </div>
+  <span class="badge">v2.1</span>
+  <div class="spacer"></div>
+  <div class="cookie-status">
+    <div class="dot" id="cookie-dot"></div>
+    <span id="cookie-status-text">No cookie</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Cookie -->
+  <div class="cookie-card">
+    <div class="cookie-card-header">
+      <span class="section-label">🔐 Roblox Security Cookie</span>
+      <button class="save-cookie-btn" onclick="saveCookie()">💾 Save to Browser</button>
+    </div>
+    <div class="cookie-row">
+      <div class="cookie-input-wrap">
+        <input type="password" id="cookie-input" placeholder="_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-..." autocomplete="off" />
+        <span class="toggle-vis" onclick="toggleCookieVis()">👁</span>
+      </div>
+      <button class="btn btn-ghost" style="flex-shrink:0;font-size:12px" onclick="loadCookie()">Load Saved</button>
+    </div>
+    <div class="cookie-hint">Cookie is <span>wiped from this field</span> the moment you click Start. Saved cookie stored locally only.</div>
+  </div>
+
+  <!-- Tabs (only 2) -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('universe')" id="tab-universe">
+      <span>🌌</span> Create Universe
+    </button>
+    <button class="tab-btn" onclick="switchTab('voice')" id="tab-voice">
+      <span>🎙️</span> Create Voice
+    </button>
+  </div>
+
+  <!-- ══ Universe Panel ══ -->
+  <div class="panel active" id="panel-universe">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-icon" style="background:rgba(79,143,255,0.15)">🌌</div>
+        <div class="card-title">Create Universe</div>
+      </div>
+      <div class="card-body">
+        <div class="fields-row">
+          <div class="field">
+            <label>Template Place ID</label>
+            <input type="number" id="u-template" value="95206881" />
+            <span class="hint">Default: 95206881 (baseplate)</span>
+          </div>
+          <div class="field">
+            <label>Number to Create</label>
+            <input type="number" id="u-count" value="1" min="1" max="500" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Delay Between Requests (s)</label>
+          <input type="number" id="u-delay" value="1.5" min="0.5" step="0.1" style="max-width:160px" />
+        </div>
+        <div class="progress-area">
+          <div class="progress-top">
+            <div class="progress-status">
+              <div class="dot" id="u-dot"></div>
+              <span id="u-status">Ready</span>
+            </div>
+            <span id="u-progress-text" style="font-family:var(--mono);font-size:11px">0 / 0</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar univ" id="u-bar"></div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" id="u-start" onclick="startUniverse()">▶ Start Creating</button>
+          <button class="btn btn-danger" id="u-stop" onclick="stopTask('universe')" disabled>■ Stop</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Log Universe -->
+    <div class="log-wrap">
+      <div class="log-header">
+        <div class="log-header-left">
+          <span class="section-label" style="font-size:11px">Activity Log</span>
+          <span class="log-count" id="u-log-count">0</span>
+        </div>
+        <div class="log-actions">
+          <button class="log-filter-btn active" onclick="filterLog('universe','all',this)">All</button>
+          <button class="log-filter-btn" onclick="filterLog('universe','ok',this)">✅ OK</button>
+          <button class="log-filter-btn" onclick="filterLog('universe','err',this)">❌ Error</button>
+          <button class="log-filter-btn" onclick="filterLog('universe','info',this)">ℹ Info</button>
+          <button class="log-clear" onclick="clearLog('universe')">Clear</button>
+        </div>
+      </div>
+      <div class="log-body" id="u-log-body">
+        <div class="log-empty" id="u-log-empty"><div class="icon">📋</div><div>No activity yet.</div></div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-box"><div class="stat-label">Total</div><div class="stat-val neutral" id="u-stat-total">0</div></div>
+        <div class="stat-box"><div class="stat-label">Successful</div><div class="stat-val green" id="u-stat-ok">0</div></div>
+        <div class="stat-box"><div class="stat-label">Failed</div><div class="stat-val red" id="u-stat-err">0</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Voice Panel ══ -->
+  <div class="panel" id="panel-voice">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-icon" style="background:rgba(168,85,247,0.15)">🎙️</div>
+        <div class="card-title">Create Voice</div>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label>Universe ID</label>
+          <input type="number" id="v-universe" placeholder="Enter Universe ID..." />
+        </div>
+        <div class="fields-row">
+          <div class="field">
+            <label>Number to Create</label>
+            <input type="number" id="v-count" value="1" min="1" max="500" />
+          </div>
+          <div class="field">
+            <label>Delay Between Requests (s)</label>
+            <input type="number" id="v-delay" value="1.5" min="0.5" step="0.1" />
+          </div>
+        </div>
+        <div class="progress-area">
+          <div class="progress-top">
+            <div class="progress-status">
+              <div class="dot" id="v-dot"></div>
+              <span id="v-status">Ready</span>
+            </div>
+            <span id="v-progress-text" style="font-family:var(--mono);font-size:11px">0 / 0</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar voice" id="v-bar"></div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-purple" id="v-start" onclick="startVoice()">▶ Start Creating</button>
+          <button class="btn btn-danger" id="v-stop" onclick="stopTask('voice')" disabled>■ Stop</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Log Voice -->
+    <div class="log-wrap">
+      <div class="log-header">
+        <div class="log-header-left">
+          <span class="section-label" style="font-size:11px">Activity Log</span>
+          <span class="log-count" id="v-log-count">0</span>
+        </div>
+        <div class="log-actions">
+          <button class="log-filter-btn active" onclick="filterLog('voice','all',this)">All</button>
+          <button class="log-filter-btn" onclick="filterLog('voice','ok',this)">✅ OK</button>
+          <button class="log-filter-btn" onclick="filterLog('voice','err',this)">❌ Error</button>
+          <button class="log-filter-btn" onclick="filterLog('voice','info',this)">ℹ Info</button>
+          <button class="log-clear" onclick="clearLog('voice')">Clear</button>
+        </div>
+      </div>
+      <div class="log-body" id="v-log-body">
+        <div class="log-empty" id="v-log-empty"><div class="icon">📋</div><div>No activity yet.</div></div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-box"><div class="stat-label">Total</div><div class="stat-val neutral" id="v-stat-total">0</div></div>
+        <div class="stat-box"><div class="stat-label">Successful</div><div class="stat-val green" id="v-stat-ok">0</div></div>
+        <div class="stat-box"><div class="stat-label">Failed</div><div class="stat-val red" id="v-stat-err">0</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const WORKER = 'https://zynplace.akubotaksenku.workers.dev';
+
+  let stopFlag = { universe: false, voice: false };
+  let stats = {
+    universe: { total:0, ok:0, err:0 },
+    voice:    { total:0, ok:0, err:0 }
+  };
+  let filters = { universe: 'all', voice: 'all' };
+
+  // ── Cookie ──
+  function getCookieValue() { return document.getElementById('cookie-input').value.trim(); }
+  function saveCookie() {
+    const v = getCookieValue();
+    if (!v) { addLog('universe','warn','No cookie to save.'); return; }
+    localStorage.setItem('roblox_cookie', v);
+    addLog('universe','info','Cookie saved to browser storage.');
+    updateCookieStatus(v);
+  }
+  function loadCookie() {
+    const v = localStorage.getItem('roblox_cookie');
+    if (!v) { addLog('universe','warn','No saved cookie found.'); return; }
+    document.getElementById('cookie-input').value = v;
+    updateCookieStatus(v);
+    addLog('universe','info','Cookie loaded from browser storage.');
+  }
+  function toggleCookieVis() {
+    const inp = document.getElementById('cookie-input');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  }
+  function updateCookieStatus(val) {
+    const dot = document.getElementById('cookie-dot');
+    const txt = document.getElementById('cookie-status-text');
+    if (val && val.startsWith('_|WARNING')) { dot.className='dot valid'; txt.textContent='Cookie valid'; }
+    else if (val) { dot.className='dot invalid'; txt.textContent='Format unknown'; }
+    else { dot.className='dot'; txt.textContent='No cookie'; }
+  }
+  document.getElementById('cookie-input').addEventListener('input', e => updateCookieStatus(e.target.value));
+  window.addEventListener('load', () => {
+    const s = localStorage.getItem('roblox_cookie');
+    if (s) { document.getElementById('cookie-input').value = s; updateCookieStatus(s); }
+  });
+
+  // ── Tabs ──
+  function switchTab(tab) {
+    ['universe','voice'].forEach(t => {
+      document.getElementById('panel-'+t).classList.toggle('active', t===tab);
+      document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+    });
+  }
+
+  // ── Progress ──
+  function setProgress(type, cur, total) {
+    const p = type === 'universe' ? 'u' : 'v';
+    const pct = total > 0 ? (cur/total)*100 : 0;
+    document.getElementById(p+'-bar').style.width = pct+'%';
+    document.getElementById(p+'-progress-text').textContent = `${cur} / ${total}`;
+  }
+  function setStatus(type, text, dotCls) {
+    const p = type === 'universe' ? 'u' : 'v';
+    document.getElementById(p+'-status').textContent = text;
+    document.getElementById(p+'-dot').className = 'dot' + (dotCls ? ' '+dotCls : '');
+  }
+  function setRunning(type, val) {
+    const p = type === 'universe' ? 'u' : 'v';
+    document.getElementById(p+'-start').disabled = val;
+    document.getElementById(p+'-stop').disabled = !val;
+  }
+
+  // ── Log ──
+  function addLog(type, level, msg, extra) {
+    const p = type === 'universe' ? 'u' : 'v';
+    const body = document.getElementById(p+'-log-body');
+    const empty = document.getElementById(p+'-log-empty');
+    if (empty) empty.style.display = 'none';
+
+    const time = new Date().toTimeString().slice(0,8);
+    const el = document.createElement('div');
+    const hidden = filters[type] !== 'all' && level !== filters[type];
+    el.className = 'log-entry' + (hidden ? ' hidden' : '');
+    el.dataset.level = level;
+    let msgHtml = msg;
+    if (extra) msgHtml += ` <span class="id-chip">${extra}</span>`;
+    el.innerHTML = `<span class="log-time">${time}</span><span class="log-tag ${level}">${level}</span><span class="log-msg">${msgHtml}</span>`;
+    body.appendChild(el);
+    body.scrollTop = body.scrollHeight;
+
+    const countEl = document.getElementById(p+'-log-count');
+    countEl.textContent = parseInt(countEl.textContent||0) + 1;
+  }
+  function filterLog(type, level, btn) {
+    filters[type] = level;
+    const p = type === 'universe' ? 'u' : 'v';
+    // reset buttons only in this tab's log
+    btn.closest('.log-actions').querySelectorAll('.log-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(p+'-log-body').querySelectorAll('.log-entry').forEach(el => {
+      el.classList.toggle('hidden', level !== 'all' && el.dataset.level !== level);
+    });
+  }
+  function clearLog(type) {
+    const p = type === 'universe' ? 'u' : 'v';
+    document.getElementById(p+'-log-body').innerHTML =
+      `<div class="log-empty" id="${p}-log-empty"><div class="icon">📋</div><div>No activity yet.</div></div>`;
+    document.getElementById(p+'-log-count').textContent = '0';
+    stats[type] = { total:0, ok:0, err:0 };
+    updateStats(type);
+  }
+  function updateStats(type) {
+    const p = type === 'universe' ? 'u' : 'v';
+    const s = stats[type];
+    document.getElementById(p+'-stat-total').textContent = s.total;
+    document.getElementById(p+'-stat-ok').textContent    = s.ok;
+    document.getElementById(p+'-stat-err').textContent   = s.err;
+  }
+
+  function sleep(s) { return new Promise(r => setTimeout(r, s*1000)); }
+
+  // ── Universe ──
+  async function startUniverse() {
+    const cookie = getCookieValue();
+    if (!cookie) { addLog('universe','warn','No Roblox cookie provided!'); return; }
+    const template = document.getElementById('u-template').value || '95206881';
+    const count    = parseInt(document.getElementById('u-count').value) || 1;
+    const delay    = parseFloat(document.getElementById('u-delay').value) || 1.5;
+
+    document.getElementById('cookie-input').value = '';
+    updateCookieStatus('');
+    stopFlag.universe = false;
+    setRunning('universe', true);
+    setStatus('universe', 'Running…', 'running');
+    addLog('universe','info',`Starting — ${count} universe(s), template: ${template}`);
+
+    let done = 0;
+    for (let i = 0; i < count; i++) {
+      if (stopFlag.universe) { addLog('universe','warn','Stopped by user.'); break; }
+      try {
+        const res  = await fetch(`${WORKER}/create-universe`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cookie, templatePlaceId: template })
+        });
+        const data = await res.json();
+        done++; stats.universe.total++; setProgress('universe', done, count);
+        if (res.ok && data.universeId) {
+          stats.universe.ok++;
+          addLog('universe','ok','Universe created', `ID: ${data.universeId}`);
+        } else {
+          stats.universe.err++;
+          addLog('universe','err', `Failed: ${data.message || data.error || res.status}`);
+        }
+      } catch(e) {
+        done++; stats.universe.total++; stats.universe.err++;
+        setProgress('universe', done, count);
+        addLog('universe','err',`Request error: ${e.message}`);
+      }
+      updateStats('universe');
+      if (i < count-1 && !stopFlag.universe) await sleep(delay);
+    }
+    setStatus('universe','Done','valid');
+    setRunning('universe', false);
+    addLog('universe','info',`Finished — ${stats.universe.ok} ok, ${stats.universe.err} failed.`);
+  }
+
+  // ── Voice ──
+  async function startVoice() {
+    const cookie = getCookieValue();
+    if (!cookie) { addLog('voice','warn','No Roblox cookie provided!'); return; }
+    const universeId = document.getElementById('v-universe').value;
+    if (!universeId) { addLog('voice','warn','Universe ID is required!'); return; }
+    const count = parseInt(document.getElementById('v-count').value) || 1;
+    const delay = parseFloat(document.getElementById('v-delay').value) || 1.5;
+
+    document.getElementById('cookie-input').value = '';
+    updateCookieStatus('');
+    stopFlag.voice = false;
+    setRunning('voice', true);
+    setStatus('voice','Running…','running');
+    addLog('voice','info',`Starting — ${count} voice(s) for universe ${universeId}`);
+
+    let done = 0;
+    for (let i = 0; i < count; i++) {
+      if (stopFlag.voice) { addLog('voice','warn','Stopped by user.'); break; }
+      try {
+        const res  = await fetch(`${WORKER}/create-voice`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cookie, universeId })
+        });
+        const data = await res.json();
+        done++; stats.voice.total++; setProgress('voice', done, count);
+        if (res.ok && (data.voiceId || data.ok || data.success)) {
+          stats.voice.ok++;
+          const id = data.voiceId || data.id || '';
+          addLog('voice','ok','Voice created' + (id ? '' : ' (no ID returned)'), id ? `ID: ${id}` : '');
+        } else {
+          stats.voice.err++;
+          addLog('voice','err',`Failed: ${data.message || data.error || res.status}`);
+        }
+      } catch(e) {
+        done++; stats.voice.total++; stats.voice.err++;
+        setProgress('voice', done, count);
+        addLog('voice','err',`Request error: ${e.message}`);
+      }
+      updateStats('voice');
+      if (i < count-1 && !stopFlag.voice) await sleep(delay);
+    }
+    setStatus('voice','Done','valid');
+    setRunning('voice', false);
+    addLog('voice','info',`Finished — ${stats.voice.ok} ok, ${stats.voice.err} failed.`);
+  }
+
+  function stopTask(type) {
+    stopFlag[type] = true;
+    addLog(type,'warn',`Stop signal sent.`);
+  }
+</script>
+</body>
+</html>
